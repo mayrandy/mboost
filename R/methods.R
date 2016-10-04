@@ -275,75 +275,66 @@ predict.glmboost <- function(object, newdata = NULL,
     .predictmboost(object$response, pr, type = type, nm = nm,
                    family = object$family)
 }
-
+# AM: github #54
 coef.glmboost <- function(object, which = NULL,
-    aggregate = c("sum", "cumsum", "none"), off2int = FALSE, ...) {
-
-    args <- list(...)
-    if (length(args) > 0)
-        warning("Arguments ", paste(names(args), sep = ", "), " unknown")
-
-    if (grepl("Negative Binomial Likelihood", object$family@name))
-        message("\nNOTE: Coefficients from a Binomial model are half the size of ",
-                "coefficients\n from a model fitted via ",
-                "glm(... , family = 'binomial').\n",
-                "See Warning section in ?coef.mboost\n")
-
-    aggregate <- match.arg(aggregate)
-    cf <- object$coef(which = which, aggregate = aggregate)
-    offset <- attr(cf, "offset")
-
-    ### intercept = hat(beta[1]) - bar(x) %*% hat(beta[-1])
-    assign <- object$assign
-    cm <- object$center
-    INTERCEPT <- sum(assign == 0) == 1
-    if (!INTERCEPT && off2int)
-        warning(sQuote("object"), " does not contain an intercept, ",
-                sQuote("off2int = TRUE"), " ignored.")
-    if (INTERCEPT && any(cm != 0)) {
-        intercept <- which(assign == 0)
-        if (is.null(which)) {
-            which <- object$which(usedonly = TRUE)
-            if (!intercept %in% which) {
-                which <- c(intercept, which)
-                cf <- object$coef(which = which, aggregate = aggregate)
-            }
-        }
-        which <- object$which(which)
-        if (intercept %in% which) {
-            if (all(which %in% object$which(usedonly = TRUE))) {
-                cm <- cm[which]
-                scf <- sapply(1:length(cf), function(i) cf[[i]] * cm[i])
-                if (!is.matrix(scf)) scf <- matrix(scf, nrow = 1)
-                cf[[intercept]] <- cf[[intercept]] - rowSums(scf)
-            } else {
-                cm <- cm[object$which(usedonly = TRUE)]
-                tmp <- object$coef(which = object$which(usedonly = TRUE),
-                                   aggregate = aggregate)
-                scf <- sapply(1:length(tmp), function(i) tmp[[i]] * cm[i])
-                if (!is.matrix(scf)) scf <- matrix(scf, nrow = 1)
-                cf[[intercept]] <- cf[[intercept]] - rowSums(scf)
-            }
-        }
+                          aggregate = c("sum", "cumsum", "none"), off2int = TRUE, ...) {
+  
+  args <- list(...)
+  if (length(args) > 0)
+    warning("Arguments ", paste(names(args), sep = ", "), " unknown")
+  
+  if (grepl("Negative Binomial Likelihood", object$family@name))
+    message("\nNOTE: Coefficients from a Binomial model are half the size of ",
+            "coefficients\n from a model fitted via ",
+            "glm(... , family = 'binomial').\n",
+            "See Warning section in ?coef.mboost\n")
+  
+  aggregate <- match.arg(aggregate)
+  cf <- object$coef(which = which, aggregate = aggregate)
+  offset <- attr(cf, "offset")
+  
+  ### intercept = hat(beta[1]) - bar(x) %*% hat(beta[-1])
+  assign <- object$assign
+  cm <- object$center
+  INTERCEPT <- sum(assign == 0) == 1
+  if (INTERCEPT && any(cm != 0)) {
+    intercept <- which(assign == 0)
+    if (is.null(which)) {
+      which <- object$which(usedonly = TRUE)
+      if (!intercept %in% which) {
+        which <- c(intercept, which)
+        cf <- object$coef(which = which, aggregate = aggregate)
+      }
     }
-
-    if (aggregate == "sum") cf <- unlist(cf)
-    if (aggregate == "none") {
-        attr(cf, "offset") <- offset
-        if (off2int)
-            warning(sQuote("off2int = TRUE"), " ignored for ",
-                    sQuote("aggregate = \"none\""))
+    which <- object$which(which)
+    if (intercept %in% which) {
+      if (all(which %in% object$which(usedonly = TRUE))) {
+        cm <- cm[which]
+        scf <- sapply(1:length(cf), function(i) cf[[i]] * cm[i])
+        if (!is.matrix(scf)) scf <- matrix(scf, nrow = 1)
+        cf[[intercept]] <- cf[[intercept]] - rowSums(scf)
+      } else {
+        cm <- cm[object$which(usedonly = TRUE)]
+        tmp <- object$coef(which = object$which(usedonly = TRUE),
+                           aggregate = aggregate)
+        scf <- sapply(1:length(tmp), function(i) tmp[[i]] * cm[i])
+        if (!is.matrix(scf)) scf <- matrix(scf, nrow = 1)
+        cf[[intercept]] <- cf[[intercept]] - rowSums(scf)
+      }
+    }
+  }
+  
+  if (aggregate == "sum") cf <- unlist(cf)
+  if (aggregate == "none")   attr(cf, "offset") <- offset
+  else {
+    if (off2int & length(offset) == 1) {
+      cf[[1]] <- cf[[1]] + offset
     } else {
-        if (off2int & length(offset) == 1) {
-            cf[[1]] <- cf[[1]] + offset
-        } else {
-            if (off2int)
-                warning(sQuote("off2int = TRUE"),
-                        " ignored for non-scalar offset")
-            attr(cf, "offset") <- offset
-        }
+      if (off2int)
+        attr(cf, "offset") <- offset
     }
-    cf
+  }
+  cf
 }
 
 hatvalues.glmboost <- function(model, ...) {

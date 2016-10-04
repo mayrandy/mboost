@@ -66,7 +66,7 @@
 \method{coef}{mboost}(object, which = NULL,
     aggregate = c("sum", "cumsum", "none"), ...)
 \method{coef}{glmboost}(object, which = NULL,
-     aggregate = c("sum", "cumsum", "none"), off2int = FALSE, ...)
+     aggregate = c("sum", "cumsum", "none"), off2int = TRUE, ...)
 
 \method{[}{mboost}(x, i, return = TRUE, ...)
 mstop(x) <- value
@@ -149,10 +149,8 @@ mstop(x) <- value
                     of the base-learner of the \eqn{j}th boosting
                     iteration (and zero if the base-learner is not
                     selected in this iteration).}
-  \item{off2int}{ logical. Indicating whether the offset should be
-                     added to the intercept (if there is any)
-                     or if the offset is returned as attribute of
-                     the coefficient (default).}
+  \item{off2int}{ logical. Indicating whether the offset (if there is any) should be
+                  added to the intercept (default) or if the offset is returned as                     attribute of the coefficient.}
   \item{i}{ integer. Index specifying the model to extract. If \code{i}
             is smaller than the initial \code{mstop}, a subset is used.
             If \code{i} is larger than the initial \code{mstop},
@@ -370,21 +368,25 @@ mstop(x) <- value
   aic
 
   ### extract coefficients for glmboost
-  coef(cars.gb)
-  coef(cars.gb, off2int = TRUE)        # offset added to intercept
-  coef(lm(dist ~ speed, data = cars))  # directly comparable
-
+  coef(cars.gb)                       # offset added to intercept
+  coef(lm(dist ~ speed, data = cars)) # directly comparable
+  coef(cars.gb, off2int = FALSE)      # offset as attribute
+  
   cars.gb_centered <- glmboost(dist ~ speed, data = cars,
                                center = TRUE)
   selected(cars.gb_centered)           # intercept never selected
-  coef(cars.gb_centered)               # intercept implicitly estimated
-                                       # and thus returned
+  coef(cars.gb_centered,               # intercept implicitly estimated
+       off2int = FALSE)                # and thus returned  
+                                     
   ## intercept is internally corrected for mean-centering
   - mean(cars$speed) * coef(cars.gb_centered, which="speed") # = intercept
   # not asked for intercept thus not returned
   coef(cars.gb_centered, which="speed")
-  # explicitly asked for intercept
+  # explicitly asked for intercept, contains offset
   coef(cars.gb_centered, which=c("Intercept", "speed"))
+  # without offset
+  coef(cars.gb_centered, which=c("Intercept", "speed"), off2int = FALSE)
+
 
   ### enhance or restrict model
   cars.gb <- gamboost(dist ~ speed, data = cars,

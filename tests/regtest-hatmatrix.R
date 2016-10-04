@@ -13,7 +13,7 @@ mydf <- df()
 
 w <- c(rep(0, 50), rep(1, 50))
 mod1 <- glmboost(y ~ ., data = mydf, weights = w, center = FALSE)
-cf1 <- coef(mod1)
+cf1 <- coef(mod1, off2int = FALSE)
 
 ### hat matrix: fast for linear models
 H <- attr(hatvalues(mod1), "hatmatrix")

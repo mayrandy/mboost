@@ -56,7 +56,7 @@ cars.gb <- glmboost(dist ~ speed, data = cars, family = fm, center = FALSE,
 cars.gb
 
 ### coefficients should coincide
-cf <- coef(cars.gb)
+cf <- coef(cars.gb, off2int = FALSE)
 attr(cf, "offset") <- NULL
 stopifnot(all.equal(cf, coef(lm(dist ~ speed, data = cars))))
 
@@ -206,9 +206,9 @@ for (i in 1:4){
     }
     if (i == 1){
         stopifnot(max(abs(pred[[i]][[2]] - pred[[i]][[3]][,ncol(pred[[i]][[3]])]))  < sqrt(.Machine$double.eps))
-        if ((pred[[i]][[2]] - rowSums(pred[[i]][[1]]))[1] - attr(coef(amod), "offset") < sqrt(.Machine$double.eps))
+        if ((pred[[i]][[2]] - rowSums(pred[[i]][[1]]))[1] - amod$offset < sqrt(.Machine$double.eps))
             warning(sQuote("aggregate = sum"), " adds the offset, ", sQuote("aggregate = none"), " doesn't.")
-        stopifnot(max(abs(pred[[i]][[2]] - rowSums(pred[[i]][[1]]) - attr(coef(amod), "offset")))   < sqrt(.Machine$double.eps))
+        stopifnot(max(abs(pred[[i]][[2]] - rowSums(pred[[i]][[1]]) - amod$offset))   < sqrt(.Machine$double.eps))
     } else {
         stopifnot(max(abs(pred[[i]][[2]] - sapply(pred[[i]][[3]], function(obj) obj[,ncol(obj)])))  < sqrt(.Machine$double.eps))
         stopifnot(max(abs(pred[[i]][[2]] - sapply(pred[[i]][[1]], function(obj) rowSums(obj))))  < sqrt(.Machine$double.eps))
@@ -218,14 +218,14 @@ for (i in 1:4){
 # type = "none"
 stopifnot(all.equal(pred[[1]][[1]], pred[[4]][[1]]$x1 + pred[[4]][[1]]$x2, check.attributes = FALSE))
 # type = "sum"
-predictions <- as.matrix(DF[, c("x1", "x2")]) %*% matrix(coef(amod), ncol = 1) +
-    attr(coef(amod), "offset")
+predictions <- as.matrix(DF[, c("x1", "x2")]) %*% matrix(coef(amod, off2int = FALSE), ncol = 1) +
+    amod$offset
 stopifnot(all.equal(pred[[1]][[2]], predictions))
 stopifnot(all.equal(c(pred[[1]][[2]]),
-                    rowSums(pred[[4]][[2]]) + attr(coef(amod), "offset"),
+                    rowSums(pred[[4]][[2]]) + amod$offset,
                     check.attributes = FALSE))
 # type = "cumsum"
-stopifnot(all.equal(pred[[1]][[3]], pred[[4]][[3]]$x1 + pred[[4]][[3]]$x2 + attr(coef(amod), "offset")))
+stopifnot(all.equal(pred[[1]][[3]], pred[[4]][[3]]$x1 + pred[[4]][[3]]$x2 + amod$offset))
 
 ## same with names
 agg <- c("none", "sum", "cumsum")
@@ -237,9 +237,9 @@ for (i in 1:4){
     }
     if (i == 1){
         stopifnot(max(abs(pred[[2]] - pred[[3]][,ncol(pred[[3]])]))  < sqrt(.Machine$double.eps))
-        if ((pred[[2]] - rowSums(pred[[1]]))[1] - attr(coef(amod), "offset") < sqrt(.Machine$double.eps))
+        if ((pred[[2]] - rowSums(pred[[1]]))[1] - amod$offset < sqrt(.Machine$double.eps))
             warning(sQuote("aggregate = sum"), " adds the offset, ", sQuote("aggregate = none"), " doesn't.")
-        stopifnot(max(abs(pred[[2]] - rowSums(pred[[1]]) - attr(coef(amod), "offset")))   < sqrt(.Machine$double.eps))
+        stopifnot(max(abs(pred[[2]] - rowSums(pred[[1]]) - amod$offset))   < sqrt(.Machine$double.eps))
     } else {
         stopifnot(max(abs(pred[[2]] - sapply(pred[[3]], function(obj) obj[,ncol(obj)])))  < sqrt(.Machine$double.eps))
         stopifnot(max(abs(pred[[2]] - sapply(pred[[1]], function(obj) rowSums(obj))))  < sqrt(.Machine$double.eps))
@@ -249,7 +249,7 @@ for (i in 1:4){
 y <- rnorm(100, mean = 3 * x1^2, sd = 2)
 DF2 <- data.frame(y = y, x1 = x1, x2 = x2, x3 = x3)
 amod <- glmboost(y ~ -1 + x1 + I(x1^2), data = DF2, center = FALSE)
-stopifnot(ncol(predict(amod, which="x1")) == 2 && all(rowSums(predict(amod, which="x1")) + attr(coef(amod), "offset") - predict(amod) < sqrt(.Machine$double.eps)))
+stopifnot(ncol(predict(amod, which="x1")) == 2 && all(rowSums(predict(amod, which="x1")) + amod$offset - predict(amod) < sqrt(.Machine$double.eps)))
 
 
 amod <- glmboost(y ~ 1+ x1 + x2, data = DF, center = FALSE)
@@ -257,7 +257,7 @@ pr1 <- predict(amod, aggre = "sum", which= 1:2)
 foo <- DF
 foo$x2 <- 0
 pr2 <- predict(amod, aggre = "sum", newdata=foo)
-stopifnot(rowSums(pr1) + attr(coef(amod),"offset") - pr2 < sqrt(.Machine$double.eps))
+stopifnot(rowSums(pr1) + amod$offset - pr2 < sqrt(.Machine$double.eps))
 newData <- as.data.frame(rbind(colMeans(DF)[-1], colMeans(DF)[-2]+1*sapply(DF, sd)[-1]))
 if (!is.list(pr <- predict(amod, newdata=newData, which=1:2)))
     warning("predict(amod, newdata=newData, which=1:2) does not return a list") # no list but a matrix is returned!
@@ -288,9 +288,9 @@ for (i in 1:4){
     if (i == 1){
         ## checks for amod
         stopifnot(max(abs(preda[[i]][[2]] - preda[[i]][[3]][,ncol(preda[[i]][[3]])]))  < sqrt(.Machine$double.eps))
-        if ((preda[[i]][[2]] - rowSums(preda[[i]][[1]]))[1] - attr(coef(amod), "offset") < sqrt(.Machine$double.eps))
+        if ((preda[[i]][[2]] - rowSums(preda[[i]][[1]]))[1] - amod$offset < sqrt(.Machine$double.eps))
             warning(sQuote("aggregate = sum"), " adds the offset, ", sQuote("aggregate = none"), " doesn't.")
-        stopifnot(max(abs(preda[[i]][[2]] - rowSums(preda[[i]][[1]]) - attr(coef(amod), "offset")))   < sqrt(.Machine$double.eps))
+        stopifnot(max(abs(preda[[i]][[2]] - rowSums(preda[[i]][[1]]) - amod$offset))   < sqrt(.Machine$double.eps))
         ## same for bmod
         stopifnot(max(abs(predb[[i]][[2]] - predb[[i]][[3]][,ncol(predb[[i]][[3]])]))  < sqrt(.Machine$double.eps))
         if ((predb[[i]][[2]] - rowSums(predb[[i]][[1]]))[1] < sqrt(.Machine$double.eps))
@@ -312,12 +312,12 @@ for (i in 1:4){
 stopifnot(all.equal(preda[[1]][[1]], preda[[4]][[1]]$x1 + preda[[4]][[1]]$x2, check.attributes = FALSE))
 stopifnot(all.equal(predb[[1]][[1]], predb[[4]][[1]]$x1 + predb[[4]][[1]]$x2, check.attributes = FALSE))
 # type = "sum"
-predictionsA <- as.matrix(newdata[, c("x1", "x2")]) %*% matrix(coef(amod), ncol = 1) +
-    attr(coef(amod), "offset")
-predictionsB <- as.matrix(newdata[, c("x1", "x2")]) %*% matrix(coef(bmod), ncol = 1)
+predictionsA <- as.matrix(newdata[, c("x1", "x2")]) %*% matrix(coef(amod, off2int = FALSE), ncol = 1) +
+    amod$offset
+predictionsB <- as.matrix(newdata[, c("x1", "x2")]) %*% matrix(coef(bmod, off2int = FALSE), ncol = 1)
 stopifnot(all.equal(preda[[1]][[2]], predictionsA))
 stopifnot(all.equal(predb[[1]][[2]], predictionsB))
-stopifnot(all.equal(c(preda[[1]][[2]]), rowSums(preda[[4]][[2]]) + attr(coef(amod), "offset"),
+stopifnot(all.equal(c(preda[[1]][[2]]), rowSums(preda[[4]][[2]]) + amod$offset,
                     check.attributes = FALSE))
 stopifnot(all.equal(c(predb[[1]][[2]]), rowSums(predb[[4]][[2]]),
                     check.attributes = FALSE))
@@ -403,7 +403,7 @@ coef(mod)
 mod2 <- glmboost(y ~ x, family = Binomial(link = "probit"),
                  control = boost_control(nu = 0.5, mstop = 1000))
 coef(mod2, off2int = TRUE)
-stopifnot(all.equal(round(coef(mod), 2), round(coef(mod2, off2int = TRUE), 2)))
+stopifnot(all.equal(round(coef(mod), 2), round(coef(mod2), 2)))
 
 data("GlaucomaM", package = "TH.data")
 coef(mod3 <- glm(Class ~ varg, data = GlaucomaM, family = binomial(link = "probit")))

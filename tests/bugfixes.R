@@ -358,7 +358,7 @@ m2 <- glmboost(y ~ x, data = data, family = Binomial(),
 m3 <- gamboost(y ~ bols(x), data = data, family = Binomial(),
                control = boost_control(mstop = 1000))
 cf1 <- coef(m1)
-a <- coef(m2); a[1] <- a[1] + m2$offset;
+a <- coef(m2, off2int = FALSE); a[1] <- a[1] + m2$offset;
 cf2 <- as.vector(a) * 2
 b <- coef(m3); b[[1]][1] <- b[[1]][1] + m3$offset;
 cf3 <- b[[1]] * 2
