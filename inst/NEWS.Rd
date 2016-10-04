@@ -4,6 +4,8 @@
 \section{Changes in mboost version 2.6-1 (2016-xx-yy)}{
   \subsection{User-visible changes}{
     \itemize{
+     \item Set default \code{off2int = TRUE} for \code{coef.glmboost()} which adds the offset to the intercept.
+       See \href{https://github.com/boost-R/mboost/issues/55}{#55}.
       \item New \code{Cindex} family to optimize survival models w.r.t. the concordance index.
       Fixes \href{https://github.com/boost-R/mboost/issues/53}{#53}.
       \item Added function \code{varimp} to extract variable importance. 
