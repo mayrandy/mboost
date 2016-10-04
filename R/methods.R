@@ -325,12 +325,12 @@ coef.glmboost <- function(object, which = NULL,
   }
   
   if (aggregate == "sum") cf <- unlist(cf)
-  if (aggregate == "none")   attr(cf, "offset") <- offset
-  else {
+  if (aggregate == "none"){
+    attr(cf, "offset") <- offset
+  } else {
     if (off2int & length(offset) == 1) {
       cf[[1]] <- cf[[1]] + offset
     } else {
-      if (off2int)
         attr(cf, "offset") <- offset
     }
   }
