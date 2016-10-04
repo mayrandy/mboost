@@ -56,8 +56,7 @@ cars.gb <- glmboost(dist ~ speed, data = cars, family = fm, center = FALSE,
 cars.gb
 
 ### coefficients should coincide
-cf <- coef(cars.gb, off2int = FALSE)
-attr(cf, "offset") <- NULL
+cf <- coef(cars.gb)
 stopifnot(all.equal(cf, coef(lm(dist ~ speed, data = cars))))
 
 ### logistic regression
@@ -71,7 +70,7 @@ attributes(llg) <- NULL
 stopifnot(all.equal(logLik(bmod), llg))
 stopifnot(max(abs(predict(gmod, type = "link")/2 - fitted(bmod))) <
                   sqrt(.Machine$double.eps))
-cfb <- coef(bmod, off2int = TRUE) * 2
+cfb <- coef(bmod) * 2
 stopifnot(all.equal(cfb, coef(gmod)))
 aic <- AIC(bmod, "classical")
 stopifnot(abs(AIC(gmod) - attr(aic, "AIC")[mstop(bmod)]) < 1e-5)
@@ -410,3 +409,25 @@ coef(mod3 <- glm(Class ~ varg, data = GlaucomaM, family = binomial(link = "probi
 coef(mod4 <- glmboost(Class ~ varg, data = GlaucomaM, family = Binomial(link = "probit"))[1000])
 stopifnot(all.equal(round(coef(mod3), 3), round(coef(mod4, off2int = TRUE), 3)))
 
+## check off2int
+data("cars")
+cars.gb <- glmboost(dist ~ speed, data = cars, center = FALSE,
+                    control = boost_control(mstop = 10, nu = 1))
+cars.gb
+## with off2int = FALSE, offset shoult be attribute
+stopifnot(attr(coef(cars.gb, off2int = FALSE), "offset") == cars.gb$offset)
+## with aggregate = "none", offset should be attribute
+stopifnot(attr(coef(cars.gb, aggregate = "none"), "offset") == cars.gb$offset)
+## with aggregate = "cumsum", offset should be attribute
+stopifnot(attr(coef(cars.gb, aggregate = "cumsum"), "offset") == cars.gb$offset)
+
+## now longer offsets -> off2int ignored
+cars.gb <- glmboost(dist ~ speed, data = cars, center = FALSE,
+                    control = boost_control(mstop = 10, nu = 1), 
+                    offset = cars$speed)
+
+stopifnot(identical(coef(cars.gb), coef(cars.gb, off2int = TRUE)))
+stopifnot(attr(coef(cars.gb), "offset") == cars.gb$offset)
+stopifnot(attr(coef(cars.gb, aggregate = "none"), "offset") == cars.gb$offset)
+stopifnot(attr(coef(cars.gb, aggregate = "cumsum"), "offset") == cars.gb$offset)
+stopifnot(attr(coef(cars.gb, aggregate = "sum"), "offset") == cars.gb$offset)
